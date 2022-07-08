@@ -1,0 +1,12 @@
+verbatim:
+  cabal-version: 2.2
+
+name: solo
+version: 0.1.0.0
+
+dependencies: 
+  - base
+
+executable:
+  source-dirs: src
+  main: Main.hs

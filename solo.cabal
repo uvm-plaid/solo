@@ -1,0 +1,31 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           solo
+version:        0.1.0.0
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+
+executable solo
+  main-is: Main.hs
+  other-modules:
+      Primitives
+      Privacy
+      PrivacyEps
+      PrivacyEpsSafe
+      PrivacySafe
+      Rats
+      Reals
+      Sensitivity
+      SensitivitySafe
+      StdLib
+      Paths_solo
+  hs-source-dirs:
+      src
+  build-depends:
+      base
+  default-language: Haskell2010
