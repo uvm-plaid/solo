@@ -25,6 +25,7 @@ import Prelude hiding (return,(>>=), sum)
 import qualified Prelude as P
 import qualified GHC.TypeLits as TL
 import Data.Proxy
+import Data.Function
 
 import Sensitivity
 import Privacy
@@ -91,6 +92,7 @@ sabs :: SDouble m s -> SDouble m s
 sabs x = D_UNSAFE $ abs $ unSDouble x
 
 -- TODO: can we do better than putting "Double" here?
+-- FIXME zijun: what's the second argument `x`
 sfilter_fn :: (forall s. Double -> Bool)
   -> (SDouble m) s1
   -> L1List (SDouble m) s2
@@ -101,12 +103,12 @@ sfilter_fn f x xs = undefined
 infsensL :: ([Double] -> [Double])
   -> SList cm (SDouble m) senv
   -> SList cm (SDouble m) (TruncateInf senv)
-infsensL f xs = undefined
+infsensL f (SList_UNSAFE xs) = map unSDouble xs & f & map D_UNSAFE & SList_UNSAFE
 
 infsensD :: (Double -> Double)
   -> SDouble m senv
   -> SDouble m (TruncateInf senv)
-infsensD f x = undefined
+infsensD f (D_UNSAFE x) = D_UNSAFE $ f x
 
 --------------------------------------------------
 -- Primitives for Lists
@@ -133,8 +135,13 @@ mkL1ListDouble xs = SList_UNSAFE $ map D_UNSAFE xs
 emptySList :: SList m t '[]
 emptySList = SList_UNSAFE []
 
+-- FIXME zijun: I can write a scons_double, but not generic scons
+--              can we really do it with the current primitives provided in Sentivity.hs?
 scons :: t s1 -> SList m t s2 -> SList m t (s1 +++ s2)
-scons x xs = undefined
+scons (D_UNSAFE x) (SList_UNSAFE xs) = x : map unSDouble xs & map D_UNSAFE & SList_UNSAFE
+
+scons_double :: SDouble m s1 -> SList m' (SDouble m) s2 -> SList m' (SDouble m) (s1 +++ s2)
+scons_double (D_UNSAFE x) (SList_UNSAFE xs) = x : map unSDouble xs & map D_UNSAFE & SList_UNSAFE
 
 sfoldr :: forall fn_sens1 fn_sens2 t1 t2 cm s3 s4 s5.
            (forall s1p s2p.
