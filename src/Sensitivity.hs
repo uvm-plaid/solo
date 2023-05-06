@@ -94,7 +94,7 @@ type family JoinSens (s1 :: SEnv) (s2 :: SEnv) :: SEnv where
   JoinSens '[] s2 = s2
   JoinSens s1 '[] = s1
   JoinSens ('(o,NatSens n1)':s1)  ('(o,NatSens n2)':s2) =
-    '(o,NatSens (MaxNat n1 n2)) ': (JoinSens s1 s2)
+    '(o,NatSens (MaxNat n1 n2)) ': JoinSens s1 s2
   JoinSens ('(o1,NatSens n1)':s1) ('(o2,NatSens n2)':s2) =
-    Cond (IsLT (TL.CmpSymbol o1 o2)) ('(o1,NatSens n1) ': (JoinSens s1 ('(o2,NatSens n2)':s2)))
-                                     ('(o2,NatSens n2) ': (JoinSens ('(o1,NatSens n1)':s1) s2))
+    Cond (IsLT (TL.CmpSymbol o1 o2)) ('(o1,NatSens n1) ': JoinSens s1 ('(o2,NatSens n2)':s2))
+                                     ('(o2,NatSens n2) ': JoinSens ('(o1,NatSens n1)':s1) s2)

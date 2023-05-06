@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -23,6 +23,8 @@ executable solo
       Sensitivity
       SensitivitySafe
       StdLib
+      Paths_solo
+  autogen-modules:
       Paths_solo
   hs-source-dirs:
       src

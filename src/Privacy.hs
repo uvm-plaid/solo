@@ -64,10 +64,9 @@ type family TruncatePriv (epsilon :: TLReal) (delta :: TLReal) (s :: SEnv) :: ED
 type family AdvComp (k :: TL.Nat) (δ' :: TLReal) (penv :: EDEnv) :: EDEnv where
   AdvComp _ _ '[]                            = '[]
   AdvComp k d2 ('(o,e1,d1)':penv)  =
-    '(o,(Times
-          (Times e1 (RNat 2))
-          (Root (Times (Times (RNat k) (RNat 2)) (Ln (Div (RNat 1) d2)))))
-        ,(Plus d2 (Times (RNat k) d1))) ': AdvComp k d2 penv
+    '(o,
+      Times (Times e1 (RNat 2)) (Root (Times (Times (RNat k) (RNat 2)) (Ln (Div (RNat 1) d2)))),
+      Plus d2 (Times (RNat k) d1)) ': AdvComp k d2 penv
 
 --------------------------------------------------
 -- Privacy Monad

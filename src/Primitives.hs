@@ -57,7 +57,7 @@ scale_unit     :: forall s.        Id (ScaleSens s 1) s
 maxnat_idemp   :: forall n.        Id (MaxNat n n) n
 truncate_n_inf :: forall n s.      Id (TruncateSens n (TruncateInf s)) (TruncateSens n s)
 scale_distrib  :: forall n s1 s2.  Id (ScaleSens (s1 +++ s2) n) (ScaleSens s1 n +++ ScaleSens s2 n)
-trunc_distrib  :: forall n1 n2 s.  Id (TruncateSens (n1 TL.+ n2) s) ((TruncateSens n1 s) +++ (TruncateSens n2 s))
+trunc_distrib  :: forall n1 n2 s.  Id (TruncateSens (n1 TL.+ n2) s) (TruncateSens n1 s +++ TruncateSens n2 s)
 
 scale_cong1    :: forall n s1 s2.  Id s1 s2 -> Id (ScaleSens s1 n) (ScaleSens s2 n)
 scale_cong2    :: forall n1 n2 s.  Id n1 n2 -> Id (ScaleSens s n1) (ScaleSens s n2)
@@ -113,7 +113,7 @@ infsensD f x = undefined
 --------------------------------------------------
 
 source :: forall o m. Double -> SDouble Diff '[ '(o, NatSens 1) ]
-source x = D_UNSAFE x
+source = D_UNSAFE
 
 sReadFileL :: forall f t. L1List (SDouble Disc) '[ '(f, NatSens 1) ]
 sReadFileL = undefined
@@ -122,10 +122,10 @@ sReadFile :: forall f t. t '[ '(f, NatSens 1) ]
 sReadFile = undefined
 
 sConstD :: forall s. Double -> SDouble Diff s
-sConstD x = D_UNSAFE x
+sConstD = D_UNSAFE
 
 sConstL :: forall s m t. [t s] -> SList m t s
-sConstL x = SList_UNSAFE x
+sConstL = SList_UNSAFE
 
 mkL1ListDouble :: forall o m. [Double] -> SList L1 (SDouble m) '[ '(o, NatSens 1) ]
 mkL1ListDouble xs = SList_UNSAFE $ map D_UNSAFE xs
@@ -138,10 +138,10 @@ scons x xs = undefined
 
 sfoldr :: forall fn_sens1 fn_sens2 t1 t2 cm s3 s4 s5.
            (forall s1p s2p.
-            t1 s1p -> t2 s2p -> t2 ((ScaleSens s1p fn_sens1) +++ (ScaleSens s2p fn_sens2)))
+            t1 s1p -> t2 s2p -> t2 (ScaleSens s1p fn_sens1 +++ ScaleSens s2p fn_sens2))
         -> t2 s5
         -> SList cm t1 s4
-        -> t2 ((ScaleSens s4 (MaxNat fn_sens1 fn_sens2)) +++ TruncateInf s5)
+        -> t2 (ScaleSens s4 (MaxNat fn_sens1 fn_sens2) +++ TruncateInf s5)
 sfoldr f init xs = undefined
 
 -- this could be defined using a truncation version of "fold"
@@ -167,7 +167,7 @@ szip xs ys = undefined
 
 p_elim :: forall fn_sens1 fn_sens2 s t1 t2 t3.
           (forall s1p s2p.
-            t1 s1p -> t2 s2p -> t3 ((ScaleSens s1p fn_sens1) +++ (ScaleSens s2p fn_sens2)))
+            t1 s1p -> t2 s2p -> t3 (ScaleSens s1p fn_sens1 +++ ScaleSens s2p fn_sens2))
        -> L1Pair t1 t2 s
        -> t3 (ScaleSens s (MaxNat fn_sens1 fn_sens2))
 p_elim f p = undefined
