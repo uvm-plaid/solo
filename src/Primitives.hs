@@ -27,6 +27,8 @@ import qualified GHC.TypeLits as TL
 import Data.Proxy
 import Data.Function
 
+import Unsafe.Coerce
+
 import Sensitivity
 import Privacy
 
@@ -137,11 +139,20 @@ emptySList = SList_UNSAFE []
 
 -- FIXME zijun: I can write a scons_double, but not generic scons
 --              can we really do it with the current primitives provided in Sentivity.hs?
-scons :: t s1 -> SList m t s2 -> SList m t (s1 +++ s2)
-scons (D_UNSAFE x) (SList_UNSAFE xs) = x : map unSDouble xs & map D_UNSAFE & SList_UNSAFE
 
-scons_double :: SDouble m s1 -> SList m' (SDouble m) s2 -> SList m' (SDouble m) (s1 +++ s2)
-scons_double (D_UNSAFE x) (SList_UNSAFE xs) = x : map unSDouble xs & map D_UNSAFE & SList_UNSAFE
+-- scons :: t s1 -> SList m t s2 -> SList m t (s1 +++ s2)
+-- scons = undefined
+
+liftSensLeft :: forall t s1 s2. t s1 -> t (s1 +++ s2)
+liftSensLeft = unsafeCoerce
+
+liftSensRight :: forall t s1 s2. t s2 -> t (s1 +++ s2)
+liftSensRight = unsafeCoerce
+
+scons :: forall t m s1 s2. t s1 -> SList m t s2 -> SList m t (s1 +++ s2)
+scons x xs = SList_UNSAFE (x' : unSList xs') where
+  x' = liftSensLeft @t @s1 @s2 x
+  xs' = liftSensRight @_ @s1 @s2 xs
 
 sfoldr :: forall fn_sens1 fn_sens2 t1 t2 cm s3 s4 s5.
            (forall s1p s2p.
