@@ -30,6 +30,11 @@ import Sensitivity
 import Rats
 import Reals
 
+import System.Random
+import qualified System.Random.MWC as MWC
+import qualified Statistics.Distribution.Laplace as Lap
+import Statistics.Distribution (ContGen(genContVar))
+
 --------------------------------------------------
 -- (epsilon, delta) privacy environments and operations
 --------------------------------------------------
@@ -88,7 +93,16 @@ xM >>= f = PM_UNSAFE $ unPM xM P.>>= (unPM . f)
 laplace :: forall eps s. (TL.KnownNat (MaxSens s))
   => SDouble Diff s
   -> PM (TruncatePriv eps Zero s) Double
-laplace x = undefined
+laplace x =
+  let maxSens :: Double
+      maxSens = fromInteger $ TL.natVal @(MaxSens s) Proxy
+      eps :: Double
+      eps = eps
+  in
+    undefined
+    -- MWC.create P.>>= \gen ->
+    -- (genContVar (Lap.laplace 0 (maxSens / eps)) gen) P.>>= \r ->
+    -- P.return (r + unSDouble x)
 
 laplaceL :: forall eps s. (TL.KnownNat (MaxSens s))
   => L1List (SDouble Diff) s

@@ -25,6 +25,7 @@ import Prelude hiding (return,(>>=), sum)
 import qualified Prelude as P
 import qualified GHC.TypeLits as TL
 import Data.Proxy
+import Unsafe.Coerce
 
 type Source = TL.Symbol                               -- sensitive data sources
 data Sensitivity = InfSens | NatSens TL.Nat           -- sensitivity values
@@ -87,6 +88,13 @@ type family TruncateSens (n :: TL.Nat) (s :: SEnv) :: SEnv where
 type family TruncateInf (s :: SEnv) :: SEnv where
   TruncateInf '[] = '[]
   TruncateInf ('(o,_) ': s) = '(o,InfSens) ': TruncateInf s
+
+
+unsafeDropSens :: forall t s. t s -> t '[]
+unsafeDropSens = unsafeCoerce
+
+unsafeLiftSens :: forall t s. t '[] -> t s
+unsafeLiftSens = unsafeCoerce
 
 
 -- Unused

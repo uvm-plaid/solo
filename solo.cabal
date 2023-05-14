@@ -29,5 +29,5 @@ executable solo
   hs-source-dirs:
       src
   build-depends:
-      base
+      base, random, mwc-random, statistics
   default-language: Haskell2010
