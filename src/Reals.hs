@@ -70,3 +70,20 @@ type family Join (e1 :: TLReal) (e2 :: TLReal) :: TLReal where
 
 type family Meet (e1 :: TLReal) (e2 :: TLReal) :: TLReal where
   Meet e1 e2 = e1 :/\: e2
+
+realVal :: forall (r :: TLReal) proxy. proxy r -> Double
+realVal _ = undefined
+
+
+-- realVal r = case r of
+--   Lit q -> ratVal q
+--   e1 :+: e2 -> realVal e1 + realVal e2
+--   e1 :*: e2 -> realVal e1 * realVal e2
+--   Ln e -> log (realVal e)
+--   Root e -> sqrt (realVal e)
+--   e1 :/: e2 -> realVal e1 / realVal e2
+--   e1 :-: e2 -> realVal e1 - realVal e2
+--   -- TODO: is Tr correct?
+--   Tr e -> exp (realVal e)
+--   e1 :\/: e2 -> max (realVal e1) (realVal e2)
+--   e1 :/\: e2 -> min (realVal e1) (realVal e2)

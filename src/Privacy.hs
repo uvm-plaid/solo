@@ -34,6 +34,7 @@ import System.Random
 import qualified System.Random.MWC as MWC
 import qualified Statistics.Distribution.Laplace as Lap
 import Statistics.Distribution (ContGen(genContVar))
+import System.Random.MWC (createSystemRandom)
 
 --------------------------------------------------
 -- (epsilon, delta) privacy environments and operations
@@ -96,13 +97,13 @@ laplace :: forall eps s. (TL.KnownNat (MaxSens s))
 laplace x =
   let maxSens :: Double
       maxSens = fromInteger $ TL.natVal @(MaxSens s) Proxy
-      eps :: Double
-      eps = eps
+      epsilon :: Double
+      epsilon = undefined  -- How to go from a type to a value??
   in
-    undefined
-    -- MWC.create P.>>= \gen ->
-    -- (genContVar (Lap.laplace 0 (maxSens / eps)) gen) P.>>= \r ->
-    -- P.return (r + unSDouble x)
+    PM_UNSAFE $
+      createSystemRandom P.>>= \gen ->
+      genContVar (Lap.laplace 0 (maxSens / epsilon)) gen P.>>= \r ->
+      P.return (r + unSDouble x)
 
 laplaceL :: forall eps s. (TL.KnownNat (MaxSens s))
   => L1List (SDouble Diff) s

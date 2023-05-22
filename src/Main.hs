@@ -163,5 +163,7 @@ mwem syn_rep qs db =
 multiplicativeWeights :: [Double] -> (Double, Double) -> Double -> [Double]
 multiplicativeWeights = undefined
 
-main :: IO ()
-main = P.return ()
+-- main :: IO ()
+ex1 = unPM $ addNoiseTwice (sConstD @'[] 1)
+
+main = unPM (laplace @(RNat 2) (sConstD @'[] 1)) P.>>= \r -> print r

@@ -65,3 +65,5 @@ type family RatDiv (r1 :: Rat) (r2 :: Rat) :: Rat where
   RatDiv (Rat_REDUCED n1 d1) (Rat_REDUCED n2 d2) =
     MkRat (d1 TL.* d2) (n1 TL.* n2)
 
+-- ratVal :: Rat -> Double
+-- ratVal (Rat_REDUCED n d) = fromIntegral n / fromIntegral d
