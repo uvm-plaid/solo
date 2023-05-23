@@ -18,8 +18,6 @@ executable solo
       PrivacyEps
       PrivacyEpsSafe
       PrivacySafe
-      Rats
-      Reals
       Sensitivity
       SensitivitySafe
       StdLib
@@ -33,4 +31,5 @@ executable solo
     , mwc-random
     , random
     , statistics
+    , typenums
   default-language: Haskell2010

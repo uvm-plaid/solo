@@ -23,7 +23,7 @@ module StdLib where
 
 import Prelude hiding (return,(>>=), sum)
 import qualified Prelude as P
-import qualified GHC.TypeLits as TL
+import Data.TypeLits as TL
 import Data.Proxy
 
 import SensitivitySafe

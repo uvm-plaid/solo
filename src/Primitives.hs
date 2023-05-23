@@ -22,7 +22,7 @@ module Primitives where
 
 import Prelude hiding (return,(>>=), sum)
 import qualified Prelude as P
-import qualified GHC.TypeLits as TL
+import Data.TypeLits as TL
 import Data.Proxy
 import Data.Function
 
@@ -205,6 +205,6 @@ ssnd p = snd $ unSPair p
 seqloop :: (TL.KnownNat k) => (Int -> a -> PM p a) -> a -> PM (ScalePriv p k) a
 seqloop = undefined
 
-advloop :: forall k delta_prime p a.
-  (TL.KnownNat k) => (Int -> a -> PM p a) -> a -> PM (AdvComp k delta_prime p) a
-advloop = undefined
+-- advloop :: forall k delta_prime p a.
+--   (TL.KnownNat k) => (Int -> a -> PM p a) -> a -> PM (AdvComp k delta_prime p) a
+-- advloop = undefined

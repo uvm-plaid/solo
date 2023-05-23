@@ -23,12 +23,9 @@ module Privacy where
 
 import Prelude hiding (return,(>>=), sum)
 import qualified Prelude as P
-import qualified GHC.TypeLits as TL
 import Data.Proxy
 
 import Sensitivity
-import Rats
-import Reals
 
 import System.Random
 import qualified System.Random.MWC as MWC
@@ -36,43 +33,44 @@ import qualified Statistics.Distribution.Laplace as Lap
 import Statistics.Distribution (ContGen(genContVar))
 import System.Random.MWC (createSystemRandom)
 
+import Data.TypeLits as TL
+
 --------------------------------------------------
 -- (epsilon, delta) privacy environments and operations
 --------------------------------------------------
 
-type EDEnv = [(TL.Symbol, TLReal, TLReal)]
-type Zero = Lit (Rat_REDUCED 0 1)
-type RNat n = Lit (Rat_REDUCED n 1)
-type RLit n1 n2 = Lit (Rat_REDUCED n1 n2)
+type EDEnv = [(TL.Symbol, TL.Rat, TL.Rat)]
+type Zero = 0 TL.:% 1
+type RNat n = n TL.:% 1
 
 type family (++++) (s1 :: EDEnv) (s2 :: EDEnv) :: EDEnv where
  '[]            ++++ s2             = s2
  s1             ++++ '[]            = s1
- ('(o,e1,d1)':s1)  ++++ ('(o,e2,d2)':s2)  = '(o,Plus e1 e2,Plus d1 d2) ': (s1 ++++ s2)
+ ('(o,e1,d1)':s1)  ++++ ('(o,e2,d2)':s2)  = '(o, e1 TL.+ e2, d1 TL.+ d2) ': (s1 ++++ s2)
  ('(o1,e1,d1)':s1) ++++ ('(o2,e2,d2)':s2) =
    Cond (IsLT (TL.CmpSymbol o1 o2)) ('(o1,e1,d1) ': (s1 ++++ ('(o2,e2,d2)':s2)))
                                     ('(o2,e2,d2) ': (('(o1,e1,d1)':s1) ++++ s2))
 
-type family ScalePriv (penv :: EDEnv) (n :: TL.Nat) :: EDEnv where
+type family ScalePriv (penv :: EDEnv) (n :: Nat) :: EDEnv where
   ScalePriv '[] _ = '[]
   ScalePriv ('(o, e1, e2) ': s) n =
-    '(o, Times (Lit (Rat_REDUCED n 1)) e1, Times (Lit (Rat_REDUCED n 1)) e2) ': ScalePriv s n
+    '(o, RNat n TL.* e1, RNat n TL.* e2) ': ScalePriv s n
 
-type family TruncateTLReal (n1 :: TLReal) (n2 :: TL.Nat) :: TLReal where
-  TruncateTLReal _ 0 = Lit (Rat_REDUCED 0 1)
+type family TruncateTLReal (n1 :: Rat) (n2 :: Nat) :: Rat where
+  TruncateTLReal _ 0 = Zero
   TruncateTLReal n _ = n
 
-type family TruncatePriv (epsilon :: TLReal) (delta :: TLReal) (s :: SEnv) :: EDEnv where
+type family TruncatePriv (epsilon :: Rat) (delta :: Rat) (s :: SEnv) :: EDEnv where
   TruncatePriv _ _ '[] = '[]
   TruncatePriv epsilon delta ('(o, NatSens n2) ': s) =
     '(o, TruncateTLReal epsilon n2, TruncateTLReal delta n2) ': TruncatePriv epsilon delta s
 
-type family AdvComp (k :: TL.Nat) (δ' :: TLReal) (penv :: EDEnv) :: EDEnv where
-  AdvComp _ _ '[]                            = '[]
-  AdvComp k d2 ('(o,e1,d1)':penv)  =
-    '(o,
-      Times (Times e1 (RNat 2)) (Root (Times (Times (RNat k) (RNat 2)) (Ln (Div (RNat 1) d2)))),
-      Plus d2 (Times (RNat k) d1)) ': AdvComp k d2 penv
+-- type family AdvComp (k :: TL.Nat) (δ' :: TLReal) (penv :: EDEnv) :: EDEnv where
+--   AdvComp _ _ '[]                            = '[]
+--   AdvComp k d2 ('(o,e1,d1)':penv)  =
+--     '(o,
+--       Times (Times e1 (RNat 2)) (Root (Times (Times (RNat k) (RNat 2)) (Ln (Div (RNat 1) d2)))),
+--       Plus d2 (Times (RNat k) d1)) ': AdvComp k d2 penv
 
 --------------------------------------------------
 -- Privacy Monad
@@ -91,14 +89,14 @@ xM >>= f = PM_UNSAFE $ unPM xM P.>>= (unPM . f)
 -- Laplace noise
 --------------------------------------------------
 
-laplace :: forall eps s. (TL.KnownNat (MaxSens s))
+laplace :: forall eps s. (TL.KnownNat (MaxSens s), KnownRat eps)
   => SDouble Diff s
   -> PM (TruncatePriv eps Zero s) Double
 laplace x =
   let maxSens :: Double
-      maxSens = fromInteger $ TL.natVal @(MaxSens s) Proxy
+      maxSens = fromInteger $ natVal (Proxy :: Proxy (MaxSens s))
       epsilon :: Double
-      epsilon = undefined  -- How to go from a type to a value??
+      epsilon = fromRational $ ratVal (Proxy :: Proxy eps) -- How to go from a type to a value??
   in
     PM_UNSAFE $
       createSystemRandom P.>>= \gen ->
