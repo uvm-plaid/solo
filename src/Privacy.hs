@@ -40,8 +40,8 @@ import Data.TypeLits as TL
 --------------------------------------------------
 
 type EDEnv = [(TL.Symbol, TL.Rat, TL.Rat)]
-type Zero = 0 TL.:% 1
-type RNat n = n TL.:% 1
+type Zero = (TL.Pos 0) TL.:% 1
+type RNat n = (TL.Pos n) TL.:% 1
 
 type family (++++) (s1 :: EDEnv) (s2 :: EDEnv) :: EDEnv where
  '[]            ++++ s2             = s2
@@ -51,16 +51,16 @@ type family (++++) (s1 :: EDEnv) (s2 :: EDEnv) :: EDEnv where
    Cond (IsLT (TL.CmpSymbol o1 o2)) ('(o1,e1,d1) ': (s1 ++++ ('(o2,e2,d2)':s2)))
                                     ('(o2,e2,d2) ': (('(o1,e1,d1)':s1) ++++ s2))
 
-type family ScalePriv (penv :: EDEnv) (n :: Nat) :: EDEnv where
+type family ScalePriv (penv :: EDEnv) (n :: TL.Nat) :: EDEnv where
   ScalePriv '[] _ = '[]
   ScalePriv ('(o, e1, e2) ': s) n =
-    '(o, RNat n TL.* e1, RNat n TL.* e2) ': ScalePriv s n
+    '(o, (RNat n) TL.* e1, (RNat n) TL.* e2) ': ScalePriv s n
 
-type family TruncateTLReal (n1 :: Rat) (n2 :: Nat) :: Rat where
+type family TruncateTLReal (n1 :: TL.Rat) (n2 :: TL.Nat) :: TL.Rat where
   TruncateTLReal _ 0 = Zero
   TruncateTLReal n _ = n
 
-type family TruncatePriv (epsilon :: Rat) (delta :: Rat) (s :: SEnv) :: EDEnv where
+type family TruncatePriv (epsilon :: TL.Rat) (delta :: TL.Rat) (s :: SEnv) :: EDEnv where
   TruncatePriv _ _ '[] = '[]
   TruncatePriv epsilon delta ('(o, NatSens n2) ': s) =
     '(o, TruncateTLReal epsilon n2, TruncateTLReal delta n2) ': TruncatePriv epsilon delta s
@@ -89,14 +89,14 @@ xM >>= f = PM_UNSAFE $ unPM xM P.>>= (unPM . f)
 -- Laplace noise
 --------------------------------------------------
 
-laplace :: forall eps s. (TL.KnownNat (MaxSens s), KnownRat eps)
+laplace :: forall eps s. (TL.KnownNat (MaxSens s), TL.KnownRat eps)
   => SDouble Diff s
   -> PM (TruncatePriv eps Zero s) Double
 laplace x =
   let maxSens :: Double
       maxSens = fromInteger $ natVal (Proxy :: Proxy (MaxSens s))
       epsilon :: Double
-      epsilon = fromRational $ ratVal (Proxy :: Proxy eps) -- How to go from a type to a value??
+      epsilon = fromRational $ ratVal (Proxy :: Proxy eps)
   in
     PM_UNSAFE $
       createSystemRandom P.>>= \gen ->

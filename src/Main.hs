@@ -50,6 +50,9 @@ addNoiseTwice x = do
   b <- laplace @(RNat 3) x
   return $ a + b
 
+egAddNoiseTwice :: PM '[ '("input_db", RNat 5, Zero) ] Double
+egAddNoiseTwice = addNoiseTwice (sConstD @'[ '( "input_db", NatSens 1 ) ] 1)
+
 -- FAIL version from the paper:
 --
 -- sumListFail xs = sfoldr (<+>) (sConstD @'[] 0) xs
@@ -72,7 +75,7 @@ sumList xs = cong scale_unit $ sfoldr @1 @1 scalePlus (sConstD @'[] 0) xs
 -- CDF Example
 --------------------------------------------------
 
-cdf :: forall ε iterations s. (TL.KnownNat (MaxSens s), TL.KnownNat iterations, KnownRat ε) =>
+cdf :: forall ε iterations s. (TL.KnownNat (MaxSens s), TL.KnownNat iterations, TL.KnownRat ε) =>
   [Double] -> L1List (SDouble Disc) s -> PM (ScalePriv (TruncatePriv ε Zero s) iterations) [Double]
 cdf buckets db = seqloop @iterations (\i results -> do
                                          let c = count $ sfilter ((<) $ buckets !! i) db
@@ -83,54 +86,59 @@ exampleDB :: L1List (SDouble Disc) '[ '( "input_db", NatSens 1 ) ]
 exampleDB = undefined
 
 -- ε = 100
--- examplecdf :: PM '[ '( "input_db", RNat 100, Zero ) ] [Double]
--- examplecdf = cdf @(RNat 1) @100 [0..100] exampleDB
+examplecdf :: PM '[ '( "input_db", RNat 100, Zero ) ] [Double]
+examplecdf = cdf @(RNat 1) @100 [0..100] exampleDB
 
 --------------------------------------------------
 -- Gradient descent example
 --------------------------------------------------
 
--- type Weights = [Double]
--- type Example = [Double]
--- type SExample = L2List (SDouble Disc)
--- type SDataset senv = L1List SExample senv
--- gradient :: Weights -> Example -> Weights
--- gradient = undefined
+{- gradient descent does not work as it requires AdvComp
+
+type Weights = [Double]
+type Example = [Double]
+type SExample = L2List (SDouble Disc)
+type SDataset senv = L1List SExample senv
+gradient :: Weights -> Example -> Weights
+gradient = undefined
 
 
--- clippedGrad :: forall senv cm m.
---   Weights -> SExample senv -> L2List (SDouble Diff) (TruncateSens 1 senv)
--- clippedGrad weights x =
---   let g = infsensL (gradient weights) x         -- apply the infinitely-sensitive function
---   in cong (truncate_n_inf @1 @senv) $ clipL2 g  -- clip the results and return
+clippedGrad :: forall senv cm m.
+  Weights -> SExample senv -> L2List (SDouble Diff) (TruncateSens 1 senv)
+clippedGrad weights x =
+  let g = infsensL (gradient weights) x         -- apply the infinitely-sensitive function
+  in cong (truncate_n_inf @1 @senv) $ clipL2 g  -- clip the results and return
 
--- gradientDescent :: forall ε δ iterations s.
---   (TL.KnownNat iterations) =>
---   Weights -> SDataset s -> PM (ScalePriv (TruncatePriv ε δ s) iterations) Weights
--- gradientDescent weights xs =
---   let gradStep i weights =
---         let clippedGrads = stmap @1 (clippedGrad weights) xs
---             gradSum = sfoldr1s sListSum1s (sConstL @'[] []) clippedGrads
---         in gaussLN @ε @δ @1 @s gradSum
---   in seqloop @iterations gradStep weights
+gradientDescent :: forall ε δ iterations s.
+  (TL.KnownNat iterations) =>
+  Weights -> SDataset s -> PM (ScalePriv (TruncatePriv ε δ s) iterations) Weights
+gradientDescent weights xs =
+  let gradStep i weights =
+        let clippedGrads = stmap @1 (clippedGrad weights) xs
+            gradSum = sfoldr1s sListSum1s (sConstL @'[] []) clippedGrads
+        in gaussLN @ε @δ @1 @s gradSum
+  in seqloop @iterations gradStep weights
 
--- gradientDescentAdv :: forall ε δ iterations s.
---   (TL.KnownNat iterations) =>
---   Weights -> SDataset s -> PM (AdvComp iterations δ (TruncatePriv ε δ s)) Weights
--- gradientDescentAdv weights xs =
---   let gradStep i weights =
---         let clippedGrads = stmap @1 (clippedGrad weights) xs
---             gradSum = sfoldr1s sListSum1s (sConstL @'[] []) clippedGrads
---         in gaussLN @ε @δ @1 @s gradSum
---   in advloop @iterations @δ gradStep weights
+gradientDescentAdv :: forall ε δ iterations s.
+  (TL.KnownNat iterations) =>
+  Weights -> SDataset s -> PM (AdvComp iterations δ (TruncatePriv ε δ s)) Weights
+gradientDescentAdv weights xs =
+  let gradStep i weights =
+        let clippedGrads = stmap @1 (clippedGrad weights) xs
+            gradSum = sfoldr1s sListSum1s (sConstL @'[] []) clippedGrads
+        in gaussLN @ε @δ @1 @s gradSum
+  in advloop @iterations @δ gradStep weights
 
--- -- SExample of passing in specific numbers to reduce the expression down to literals
--- -- Satisfies (1, 1e-5)-DP
--- gdMain :: PM '[ '("dataset.dat", RNat 1, RLit 1 100000) ] Weights
--- gdMain =
---   let weights = take 10 $ repeat 0
---       dataset = sReadFile @"dataset.dat"
---   in gradientDescent @(RLit 1 100) @(RLit 1 10000000) @100 weights dataset
+-- SExample of passing in specific numbers to reduce the expression down to literals
+-- Satisfies (1, 1e-5)-DP
+gdMain :: PM '[ '("dataset.dat", RNat 1, RLit 1 100000) ] Weights
+gdMain =
+  let weights = take 10 $ repeat 0
+      dataset = sReadFile @"dataset.dat"
+  in gradientDescent @(RLit 1 100) @(RLit 1 10000000) @100 weights dataset
+
+-}
+
 
 --------------------------------------------------
 -- MWEM
@@ -149,7 +157,7 @@ scoreFn syn_rep q db =
   in sabs $ sConstD @'[] syn_answer <-> true_answer
 
 mwem :: forall ε iterations s.
-  (TL.KnownNat (MaxSens s), TL.KnownNat iterations, KnownRat ε) =>
+  (TL.KnownNat (MaxSens s), TL.KnownNat iterations, TL.KnownRat ε) =>
   [Double] -> [RangeQuery] -> L1List (SDouble Disc) s
   -> PM (ScalePriv ((TruncatePriv ε Zero s) ++++ (TruncatePriv ε Zero s)) iterations) [Double]
 mwem syn_rep qs db =
@@ -162,7 +170,6 @@ mwem syn_rep qs db =
 multiplicativeWeights :: [Double] -> (Double, Double) -> Double -> [Double]
 multiplicativeWeights = undefined
 
--- main :: IO ()
-ex1 = unPM $ addNoiseTwice (sConstD @'[] 1)
 
-main = unPM (laplace @(RNat 2) (sConstD @'[ '( "input_db", NatSens 1 ) ] 1)) P.>>= \r -> print r
+main = 
+  unPM egAddNoiseTwice P.>>= \r -> print r
