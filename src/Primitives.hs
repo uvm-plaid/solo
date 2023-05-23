@@ -202,8 +202,19 @@ ssnd p = snd $ unSPair p
 -- Looping combinators
 --------------------------------------------------
 
-seqloop :: (TL.KnownNat k) => (Int -> a -> PM p a) -> a -> PM (ScalePriv p k) a
-seqloop = undefined
+seqloop :: forall (k :: Nat) a (p :: EDEnv). (TL.KnownNat k) => (Int -> a -> PM p a) -> a -> PM (ScalePriv p k) a
+seqloop f init =
+  let
+    iteration = fromInteger (TL.natVal (Proxy :: Proxy k))
+    loop :: Int -> IO a -> IO a
+    loop i accu =
+      if i == iteration then
+        accu
+      else
+        accu P.>>= \accu' ->
+        loop (i+1) (unPM $ f i accu')
+  in
+    unsafeCoerce $ loop 0 (P.return init)
 
 -- advloop :: forall k delta_prime p a.
 --   (TL.KnownNat k) => (Int -> a -> PM p a) -> a -> PM (AdvComp k delta_prime p) a

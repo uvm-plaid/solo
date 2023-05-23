@@ -30,6 +30,8 @@ import SensitivitySafe
 import PrivacySafe
 import Primitives
 import StdLib
+import Text.Read (readMaybe)
+import Data.Maybe (mapMaybe)
 
 
 --------------------------------------------------
@@ -50,8 +52,8 @@ addNoiseTwice x = do
   b <- laplace @(RNat 3) x
   return $ a + b
 
-egAddNoiseTwice :: PM '[ '("input_db", RNat 5, Zero) ] Double
-egAddNoiseTwice = addNoiseTwice (sConstD @'[ '( "input_db", NatSens 1 ) ] 1)
+egAddNoiseTwice :: Double -> PM '[ '("input_db", RNat 5, Zero) ] Double
+egAddNoiseTwice x = addNoiseTwice (sConstD @'[ '( "input_db", NatSens 1 ) ] x)
 
 -- FAIL version from the paper:
 --
@@ -82,12 +84,22 @@ cdf buckets db = seqloop @iterations (\i results -> do
                                          r <- laplace @ε c
                                          return (r : results)) []
 
-exampleDB :: L1List (SDouble Disc) '[ '( "input_db", NatSens 1 ) ]
-exampleDB = undefined
+readDoublesFromFile :: FilePath -> IO [Double]
+readDoublesFromFile filepath =
+  readFile filepath P.>>= \contents ->
+  let lines' = lines contents in
+  P.return $ mapMaybe readMaybe lines'
+
+exampleDB :: IO (L1List (SDouble Disc) '[ '("random_numbers.txt", NatSens 1 ) ])
+exampleDB =
+  readDoublesFromFile "random_numbers.txt" P.>>= \xs ->
+  P.return $ mkL1ListDouble xs
 
 -- ε = 100
-examplecdf :: PM '[ '( "input_db", RNat 100, Zero ) ] [Double]
-examplecdf = cdf @(RNat 1) @100 [0..100] exampleDB
+examplecdf :: IO (PM '[ '("random_numbers.txt", RNat 100, Zero ) ] [Double])
+examplecdf =
+  exampleDB P.>>= \exampleDB ->
+  P.return $ cdf @(RNat 1) @100 [0..100] exampleDB
 
 --------------------------------------------------
 -- Gradient descent example
@@ -172,4 +184,6 @@ multiplicativeWeights = undefined
 
 
 main = 
-  unPM egAddNoiseTwice P.>>= \r -> print r
+  examplecdf P.>>= \cdfResult ->
+  unPM cdfResult P.>>= \cdfResult ->
+  print cdfResult
