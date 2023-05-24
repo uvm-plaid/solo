@@ -70,7 +70,7 @@ plus_cong      :: forall s1 s1' s2 s2'. Id s1 s1' -> Id s2 s2' -> Id (s1 +++ s2)
 priv_idemp     :: forall n eps delta senv. Id (TruncatePriv eps delta (TruncateSens n senv))
                                               (TruncatePriv eps delta senv)
 
-scale_unit = undefined
+scale_unit = unsafeCoerce Id
 maxnat_idemp = undefined
 truncate_n_inf = undefined
 scale_distrib = undefined

@@ -29,6 +29,7 @@ import Data.Proxy
 import SensitivitySafe
 import PrivacySafe
 import Primitives
+import Unsafe.Coerce (unsafeCoerce)
 
 
 summationFunction :: L1List (SDouble Disc) senv -> SDouble Diff (TruncateSens 1 senv)
