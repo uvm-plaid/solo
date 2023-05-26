@@ -30,6 +30,7 @@ import Unsafe.Coerce
 
 import Sensitivity
 import Privacy
+import qualified Data.List as List
 
 --------------------------------------------------
 -- Axioms about sensitivities
@@ -102,8 +103,8 @@ sfilter_fn :: (forall s. Double -> Bool)
 sfilter_fn f x xs =
   (if f x' then x' : xs' else xs') & map D_UNSAFE & SList_UNSAFE
   where
-    x' = unsafeDropSens x & unSDouble
-    xs' = unsafeDropSens xs & unSList & map unSDouble
+    x' = unSDouble x
+    xs' = unSList xs & map unSDouble
 
 -- Run a regular Haskell function and treat its output as infinitely sensitive
 infsensL :: ([Double] -> [Double])
@@ -163,21 +164,26 @@ stmap :: forall n s2 a b.
 stmap f as = SList_UNSAFE $ map f (unSList as)
 
 clipDouble :: forall m senv. SDouble Disc senv -> SDouble Diff senv
-clipDouble (D_UNSAFE x) = D_UNSAFE x
+clipDouble = undefined
 
 clipL1 :: forall m senv.
   L1List (SDouble m) senv -> L1List (SDouble Diff) (TruncateSens 1 senv)
-clipL1 = stmap @1 (\(D_UNSAFE x) -> D_UNSAFE x)
+clipL1 (SList_UNSAFE xs) =
+  let
+    xs' = map unSDouble xs
+    sum = List.sum xs'
+  in
+    map (\x -> D_UNSAFE $ x / sum) xs' & SList_UNSAFE
 
 clipL2 :: forall m senv.
   L2List (SDouble m) senv -> L2List (SDouble Diff) (TruncateSens 1 senv)
-clipL2 = stmap @1 (\(D_UNSAFE x) -> D_UNSAFE x) where
-  stmap :: forall n s2 a b.
-    (forall s1. a s1 -> b (TruncateSens n s1))
-    -> L2List a s2
-    -> L2List b (TruncateSens n s2)
-  stmap f as = SList_UNSAFE $ map f (unSList as)
-
+clipL2 (SList_UNSAFE xs) =
+  let
+    xs' = map unSDouble xs
+    l2Sum = sqrt $ List.sum $ map (**2) xs'
+  in
+    map (\x -> D_UNSAFE $ x / l2Sum) xs' & SList_UNSAFE
+  
 szip :: SList m a s1 -> SList m b s2 -> SList m (L1Pair a b) (s1 +++ s2)
 szip xs ys = SList_UNSAFE xys & unsafeLiftSens where
   xs' = unsafeDropSens xs & unSList

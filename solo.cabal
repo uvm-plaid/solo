@@ -15,8 +15,6 @@ executable solo
   other-modules:
       Primitives
       Privacy
-      PrivacyEps
-      PrivacyEpsSafe
       PrivacySafe
       Sensitivity
       SensitivitySafe
